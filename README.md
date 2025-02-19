@@ -40,6 +40,25 @@ let conf = Config::new_with_custom_values(true, "", "text", NullValue::Ignore);
 
 ## Enforcing JSON types
 
+### Matching based on absolute path or regex
+
+You can override the type of absolute paths within the XML
+
+``` rust
+let config = Config::new_with_defaults()
+	.add_json_type_override("/a/b", JsonArray::Always(JsonType::AlwaysString));
+```
+
+Or you can match based on a regex!
+
+``` rust
+let config = Config::new_with_defaults()
+	.add_json_type_override(
+		Regex::new(r"element").unwrap(),
+			JsonArray::Always(JsonType::Infer)
+		);
+```
+
 #### Strings
 
 The default for this library is to attempt to infer scalar data types, which can be `int`, `float`, `bool` or `string` in JSON. Sometimes it is not desirable like in the example below. Let's assume that attribute `id` is always numeric and can be safely converted to JSON integer.
@@ -75,9 +94,9 @@ let conf = Config::new_with_defaults().add_json_type_override("/a/@attr1", JsonA
 Configuration to make both attributes and the text node of `<b />` always come out as a JSON string:
 ```rust
 let conf = Config::new_with_defaults()
-          .add_json_type_override("/a/@attr1", JsonArray::Infer(JsonType::AlwaysString))
-          .add_json_type_override("/a/b/@attr1", JsonArray::Infer(JsonType::AlwaysString))
-          .add_json_type_override("/a/b", JsonArray::Infer(JsonType::AlwaysString));
+		  .add_json_type_override("/a/@attr1", JsonArray::Infer(JsonType::AlwaysString))
+		  .add_json_type_override("/a/b/@attr1", JsonArray::Infer(JsonType::AlwaysString))
+		  .add_json_type_override("/a/b", JsonArray::Infer(JsonType::AlwaysString));
 ```
 
 #### Boolean
@@ -86,7 +105,7 @@ The only two [valid boolean values in JSON](https://json-schema.org/understandin
 
 ```rust
 let conf = Config::new_with_defaults()
-        .add_json_type_override("/a/b", JsonArray::Infer(JsonType::Bool(vec!["True","true","1","yes"])));
+		.add_json_type_override("/a/b", JsonArray::Infer(JsonType::Bool(vec!["True","true","1","yes"])));
 ```
 
 #### Arrays
@@ -126,13 +145,13 @@ You can use `add_json_type_override()` with `JsonArray::Always()` to create a JS
 
 ```rust
 let config = Config::new_with_defaults()
-        .add_json_type_override("/a/b", JsonArray::Always(JsonType::AlwaysString));
+		.add_json_type_override("/a/b", JsonArray::Always(JsonType::AlwaysString));
 ```
 
 Conversion of empty XML nodes like `<a><b /></a>` depends on `NullValue` setting. For example,
 ```rust
 let config = Config::new_with_custom_values(false, "@", "#text", NullValue::Ignore)
-        .add_json_type_override("/a/b", JsonArray::Always(JsonType::Infer));
+		.add_json_type_override("/a/b", JsonArray::Always(JsonType::Infer));
 ```
 converts `<a><b /></a>` to
 ```json
@@ -165,8 +184,8 @@ is converted into
 ```json
 "Test":
   {
-    "Input": 1,
-    "TestId": "0001"
+	"Input": 1,
+	"TestId": "0001"
   }
 ```
 - XML prolog is dropped. E.g. `<?xml version="1.0"?>`.
@@ -182,10 +201,10 @@ into
 ```json
 {
   "CardNumber": {
-          "Month": 3,
-          "Year": 19,
-          "text": 1234567
-        }
+		  "Month": 3,
+		  "Year": 19,
+		  "text": 1234567
+		}
 }
 ```
 - Elements with identical names are collected into arrays. E.g.
@@ -193,14 +212,14 @@ into
 <Root>
   <TaxRate>7.25</TaxRate>
   <Data>
-    <Category>A</Category>
-    <Quantity>3</Quantity>
-    <Price>24.50</Price>
+	<Category>A</Category>
+	<Quantity>3</Quantity>
+	<Price>24.50</Price>
   </Data>
   <Data>
-    <Category>B</Category>
-    <Quantity>1</Quantity>
-    <Price>89.99</Price>
+	<Category>B</Category>
+	<Quantity>1</Quantity>
+	<Price>89.99</Price>
   </Data>
 </Root>
 ```
@@ -208,19 +227,19 @@ is converted into
 ```json
 {
   "Root": {
-    "Data": [
-      {
-        "Category": "A",
-        "Price": 24.5,
-        "Quantity": 3
-      },
-      {
-        "Category": "B",
-        "Price": 89.99,
-        "Quantity": 1
-      }
-    ],
-    "TaxRate": 7.25
+	"Data": [
+	  {
+		"Category": "A",
+		"Price": 24.5,
+		"Quantity": 3
+	  },
+	  {
+		"Category": "B",
+		"Price": 89.99,
+		"Quantity": 1
+	  }
+	],
+	"TaxRate": 7.25
   }
 }
 ```
