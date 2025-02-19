@@ -445,6 +445,7 @@ fn convert_node(el: &roxmltree::Node, config: &Config, path: &String) -> Option<
 
     // get the json_type for this node
     let (_, json_type_value) = get_json_type(config, &path);
+    let json_type_value = json_type_value.clone();
 
     // is it an element with text?
     match el.text() {
