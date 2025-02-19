@@ -372,7 +372,8 @@ fn convert_test_files() {
         assert!(
             file.write_all(to_string_pretty(&json).unwrap().as_bytes())
                 .is_ok(),
-            format!("Failed on {:?}", entry.as_os_str())
+            "Failed on {:?}",
+            entry.as_os_str()
         );
     }
 }
@@ -406,11 +407,9 @@ fn test_regex_json_type_overrides() {
         }
     });
 
-    let config = Config::new_with_defaults()
-        .add_json_type_override(
-            Regex::new(r"\w/b").unwrap(),
-            JsonArray::Always(JsonType::Infer
-        )
+    let config = Config::new_with_defaults().add_json_type_override(
+        Regex::new(r"\w/b").unwrap(),
+        JsonArray::Always(JsonType::Infer),
     );
 
     let result = xml_string_to_json(String::from(xml), &config);
@@ -452,13 +451,11 @@ fn test_regex_json_type_overrides() {
         }
     });
 
-    let config = Config::new_with_defaults()
-        .add_json_type_override(
-            Regex::new(r"element").unwrap(),
-            JsonArray::Always(JsonType::Infer)
-        );
+    let config = Config::new_with_defaults().add_json_type_override(
+        Regex::new(r"element").unwrap(),
+        JsonArray::Always(JsonType::Infer),
+    );
 
     let result = xml_string_to_json(String::from(xml), &config);
     assert_eq!(expected, result.unwrap());
-
 }

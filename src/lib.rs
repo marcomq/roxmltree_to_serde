@@ -3,7 +3,7 @@
 #![allow(clippy::single_char_pattern)]
 #![allow(clippy::needless_borrow)]
 #![allow(clippy::ptr_arg)]
-//! # quickxml_to_serde
+//! # roxmltree_to_serde
 //! Fast and flexible conversion from XML to JSON using [quick-xml](https://github.com/tafia/quick-xml)
 //! and [serde](https://github.com/serde-rs/json). Inspired by [node2object](https://github.com/vorot93/node2object).
 //!
@@ -18,8 +18,8 @@
 //!
 //! ## Usage example
 //! ```
-//! extern crate quickxml_to_serde;
-//! use quickxml_to_serde::{xml_string_to_json, Config, NullValue};
+//! extern crate roxmltree_to_serde;
+//! use roxmltree_to_serde::{xml_string_to_json, Config, NullValue};
 //!
 //! fn main() {
 //!    let xml = r#"<a attr1="1"><b><c attr2="001">some text</c></b></a>"#;
@@ -36,11 +36,11 @@
 //! * **Output with a custom config:** `{"a":{"attr1":1,"b":{"c":{"attr2":"001","txt":"some text"}}}}`
 //!
 //! ## Additional features
-//! Use `quickxml_to_serde = { version = "0.4", features = ["json_types"] }` to enable support for enforcing JSON types
+//! Use `roxmltree_to_serde = { version = "0.4", features = ["json_types"] }` to enable support for enforcing JSON types
 //! for some XML nodes using xPath-like notations. Example for enforcing attribute `attr2` from the snippet above
 //! as JSON String regardless of its contents:
 //! ```
-//! use quickxml_to_serde::{Config, JsonArray, JsonType};
+//! use roxmltree_to_serde::{Config, JsonArray, JsonType};
 //!
 //! #[cfg(feature = "json_types")]
 //! let conf = Config::new_with_defaults()
@@ -48,24 +48,22 @@
 //! ```
 //!
 //! ## Detailed documentation
-//! See [README](https://github.com/AlecTroemel/quickxml_to_serde) in the source repo for more examples, limitations and detailed behavior description.
+//! See [README](https://github.com/marcomq/roxmltree_to_serde) in the source repo for more examples, limitations and detailed behavior description.
 //!
 //! ## Testing your XML files
 //!
 //! If you want to see how your XML files are converted into JSON, place them into `./test_xml_files` directory
 //! and run `cargo test`. They will be converted into JSON and saved in the saved directory.
 
-extern crate minidom;
+extern crate roxmltree;
 extern crate serde_json;
 
 #[cfg(feature = "regex_path")]
 extern crate regex;
 
-use minidom::{Element, Error};
 use serde_json::{Map, Number, Value};
 #[cfg(feature = "json_types")]
 use std::collections::HashMap;
-use std::str::FromStr;
 
 #[cfg(feature = "regex_path")]
 use regex::Regex;
@@ -237,7 +235,7 @@ impl Config {
     #[cfg(feature = "json_types")]
     pub fn add_json_type_override<P>(self, path: P, json_type: JsonArray) -> Self
     where
-        P: Into<PathMatcher>
+        P: Into<PathMatcher>,
     {
         let mut conf = self;
 
@@ -247,10 +245,7 @@ impl Config {
             }
             #[cfg(feature = "regex_path")]
             PathMatcher::Regex(regex) => {
-                conf.json_regex_type_overrides.push((
-                    regex,
-                    json_type
-                ));
+                conf.json_regex_type_overrides.push((regex, json_type));
             }
         }
 
@@ -314,76 +309,86 @@ fn parse_text(text: &str, leading_zero_as_string: bool, json_type: &JsonType) ->
     Value::String(text.into())
 }
 
-/// Converts an XML Element into a JSON property
-fn convert_node(el: &Element, config: &Config, path: &String) -> Option<Value> {
-    // add the current node to the path
-    #[cfg(feature = "json_types")]
-    let path = [path, "/", el.name()].concat();
-
-    // get the json_type for this node
-    let (_, json_type_value) = get_json_type(config, &path);
-
-    // is it an element with text?
-    if el.text().trim() != "" {
-        // process node's attributes, if present
-        if el.attrs().count() > 0 {
-            Some(Value::Object(
-                el.attrs()
-                    .map(|(k, v)| {
-                        // add the current node to the path
-                        #[cfg(feature = "json_types")]
-                        let path = [path.clone(), "/@".to_owned(), k.to_owned()].concat();
-                        // get the json_type for this node
-                        #[cfg(feature = "json_types")]
-                        let (_, json_type_value) = get_json_type(config, &path);
-                        (
-                            [config.xml_attr_prefix.clone(), k.to_owned()].concat(),
-                            parse_text(&v, config.leading_zero_as_string, &json_type_value),
-                        )
-                    })
-                    .chain(vec![(
-                        config.xml_text_node_prop_name.clone(),
+fn convert_text(
+    el: &roxmltree::Node,
+    config: &Config,
+    text: &str,
+    json_type_value: JsonType,
+) -> Option<Value> {
+    // process node's attributes, if present
+    if el.attributes().count() > 0 {
+        Some(Value::Object(
+            el.attributes()
+                .map(|attr| {
+                    // add the current node to the path
+                    #[cfg(feature = "json_types")]
+                    let path = [path.clone(), "/@".to_owned(), attr.name().to_string()].concat();
+                    // get the json_type for this node
+                    #[cfg(feature = "json_types")]
+                    let (_, json_type_value) = get_json_type(config, &path);
+                    (
+                        [config.xml_attr_prefix.clone(), attr.name().to_string()].concat(),
                         parse_text(
-                            &el.text()[..],
+                            attr.value(),
                             config.leading_zero_as_string,
                             &json_type_value,
                         ),
-                    )])
-                    .collect(),
-            ))
-        } else {
-            Some(parse_text(
-                &el.text()[..],
+                    )
+                })
+                .chain(vec![(
+                    config.xml_text_node_prop_name.clone(),
+                    parse_text(&text[..], config.leading_zero_as_string, &json_type_value),
+                )])
+                .collect(),
+        ))
+    } else {
+        Some(parse_text(
+            &text[..],
+            config.leading_zero_as_string,
+            &json_type_value,
+        ))
+    }
+}
+
+fn convert_no_text(
+    el: &roxmltree::Node,
+    config: &Config,
+    path: &String,
+    json_type_value: JsonType,
+) -> Option<Value> {
+    // this element has no text, but may have other child nodes
+    let mut data = Map::new();
+
+    for attr in el.attributes() {
+        // add the current node to the path
+        #[cfg(feature = "json_types")]
+        let path = [path.clone(), "/@".to_owned(), attr.name().to_string()].concat();
+        // get the json_type for this node
+        #[cfg(feature = "json_types")]
+        let (_, json_type_value) = get_json_type(config, &path);
+        data.insert(
+            [config.xml_attr_prefix.clone(), attr.name().to_string()].concat(),
+            parse_text(
+                attr.value(),
                 config.leading_zero_as_string,
                 &json_type_value,
-            ))
-        }
-    } else {
-        // this element has no text, but may have other child nodes
-        let mut data = Map::new();
+            ),
+        );
+    }
 
-        for (k, v) in el.attrs() {
-            // add the current node to the path
-            #[cfg(feature = "json_types")]
-            let path = [path.clone(), "/@".to_owned(), k.to_owned()].concat();
-            // get the json_type for this node
-            #[cfg(feature = "json_types")]
-            let (_, json_type_value) = get_json_type(config, &path);
-            data.insert(
-                [config.xml_attr_prefix.clone(), k.to_owned()].concat(),
-                parse_text(&v, config.leading_zero_as_string, &json_type_value),
-            );
-        }
-
-        // process child element recursively
-        for child in el.children() {
-            match convert_node(child, config, &path) {
-                Some(val) => {
-                    let name = &child.name().to_string();
-
+    // process child element recursively
+    for child in el.children() {
+        match convert_node(&child, config, &path) {
+            Some(val) => {
+                let name = &child.tag_name().name().to_string();
+                println!("{:?}", name);
+                if name == "" {
+                    ()
+                } else {
                     #[cfg(feature = "json_types")]
                     let path = [path.clone(), "/".to_owned(), name.clone()].concat();
                     let (json_type_array, _) = get_json_type(config, &path);
+
                     // does it have to be an array?
                     if json_type_array || data.contains_key(name) {
                         // was this property converted to an array earlier?
@@ -408,41 +413,67 @@ fn convert_node(el: &Element, config: &Config, path: &String) -> Option<Value> {
                         data.insert(name.clone(), val);
                     }
                 }
-                _ => (),
             }
+            _ => (),
         }
+    }
 
-        // return the JSON object if it's not empty
-        if !data.is_empty() {
-            return Some(Value::Object(data));
-        }
+    // return the JSON object if it's not empty
+    if !data.is_empty() {
+        return Some(Value::Object(data));
+    }
 
-        // empty objects are treated according to config rules set by the caller
-        match config.empty_element_handling {
-            NullValue::Null => Some(Value::Null),
-            NullValue::EmptyObject => Some(Value::Object(data)),
-            NullValue::Ignore => None,
-        }
+    // empty objects are treated according to config rules set by the caller
+    match config.empty_element_handling {
+        NullValue::Null => Some(Value::Null),
+        NullValue::EmptyObject => Some(Value::Object(data)),
+        NullValue::Ignore => None,
     }
 }
 
-fn xml_to_map(e: &Element, config: &Config) -> Value {
+/// Converts an XML Element into a JSON property
+fn convert_node(el: &roxmltree::Node, config: &Config, path: &String) -> Option<Value> {
+    // add the current node to the path
+    #[cfg(feature = "json_types")]
+    let path = [path, "/", el.tag_name().name()].concat();
+
+    // get the json_type for this node
+    let (_, json_type_value) = get_json_type(config, &path);
+    let json_type_value = json_type_value.clone();
+
+    // is it an element with text?
+    match el.text() {
+        Some(mut text) => {
+            text = text.trim();
+
+            if text != "" {
+                convert_text(el, config, text, json_type_value)
+            } else {
+                convert_no_text(el, config, path, json_type_value)
+            }
+        }
+        None => convert_no_text(el, config, path, json_type_value),
+    }
+}
+
+fn xml_to_map(e: &roxmltree::Node, config: &Config) -> Value {
     let mut data = Map::new();
     data.insert(
-        e.name().to_string(),
+        e.tag_name().name().to_string(),
         convert_node(&e, &config, &String::new()).unwrap_or(Value::Null),
     );
     Value::Object(data)
 }
 
 /// Converts the given XML string into `serde::Value` using settings from `Config` struct.
-pub fn xml_str_to_json(xml: &str, config: &Config) -> Result<Value, Error> {
-    let root = Element::from_str(xml)?;
+pub fn xml_str_to_json(xml: &str, config: &Config) -> Result<Value, roxmltree::Error> {
+    let doc = roxmltree::Document::parse(xml)?;
+    let root = doc.root_element();
     Ok(xml_to_map(&root, config))
 }
 
 /// Converts the given XML string into `serde::Value` using settings from `Config` struct.
-pub fn xml_string_to_json(xml: String, config: &Config) -> Result<Value, Error> {
+pub fn xml_string_to_json(xml: String, config: &Config) -> Result<Value, roxmltree::Error> {
     xml_str_to_json(xml.as_str(), config)
 }
 
@@ -451,11 +482,14 @@ pub fn xml_string_to_json(xml: String, config: &Config) -> Result<Value, Error> 
 /// in the list of paths with custom config.
 #[cfg(feature = "json_types")]
 #[inline]
-fn get_json_type_with_absolute_path<'conf>(config: &'conf Config, path: &String) -> (bool, &'conf JsonType) {
+fn get_json_type_with_absolute_path<'conf>(
+    config: &'conf Config,
+    path: &String,
+) -> (bool, &'conf JsonType) {
     match config
-    .json_type_overrides
-    .get(path)
-    .unwrap_or(&JsonArray::Infer(JsonType::Infer))
+        .json_type_overrides
+        .get(path)
+        .unwrap_or(&JsonArray::Infer(JsonType::Infer))
     {
         JsonArray::Infer(v) => (false, v),
         JsonArray::Always(v) => (true, v),
