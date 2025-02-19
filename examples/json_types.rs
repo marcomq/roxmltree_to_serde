@@ -1,6 +1,6 @@
-extern crate quickxml_to_serde;
+extern crate roxmltree_to_serde;
 #[cfg(feature = "json_types")]
-use quickxml_to_serde::{xml_string_to_json, Config, JsonArray, JsonType};
+use roxmltree_to_serde::{xml_string_to_json, Config, JsonArray, JsonType};
 
 #[cfg(feature = "json_types")]
 fn main() {

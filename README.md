@@ -1,4 +1,4 @@
-# quickxml_to_serde
+# roxmltree_to_serde
 
 Convert XML to JSON using [roxml](https://github.com/RazrFalcon/roxmltree) and [serde](https://github.com/serde-rs/json). Inspired by [node2object](https://github.com/vorot93/node2object).
 
@@ -10,7 +10,7 @@ Dependencies:
 ```rust
 use std::fs::File;
 use std::io::prelude::*;
-use quickxml_to_serde::xml_string_to_json;
+use roxmltree_to_serde::xml_string_to_json;
 ```
 Rust code to perform a conversion:
 ```rust
@@ -81,7 +81,7 @@ difficult to deserialize the structure, so we may be better off telling the conv
 </users>
 ```
 
-Use `quickxml_to_serde = { version = "0.4", features = ["json_types"] }` feature in your *Cargo.toml* file to enable support for enforcing JSON types for some XML nodes using xPath-like notations.
+Use `roxmltree_to_serde = { version = "0.4", features = ["json_types"] }` feature in your *Cargo.toml* file to enable support for enforcing JSON types for some XML nodes using xPath-like notations.
 
 Sample XML document:
 ```xml

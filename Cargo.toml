@@ -1,9 +1,10 @@
 [package]
-name = "quickxml_to_serde"
+name = "roxmltree_to_serde"
 version = "0.6.0"
-authors = ["Alec Troemel <alec@mirusresearch.com>", "Max Voskob <max@onebro.me>"]
-description = "Convert between XML JSON using quickxml and serde"
-repository = "https://github.com/AlecTroemel/quickxml_to_serde"
+edition = "2021"
+authors = ["Alec Troemel <alec@mirusresearch.com>", "Max Voskob <max@onebro.me>", "Marco Mengelkoch"]
+description = "Convert between XML JSON using roxmltree and serde"
+repository = "https://github.com/marcomq/roxmltree_to_serde"
 keywords = ["json", "xml", "xml2json", "xml_to_json"]
 license = "MIT"
 

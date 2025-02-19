@@ -3,7 +3,7 @@
 #![allow(clippy::single_char_pattern)]
 #![allow(clippy::needless_borrow)]
 #![allow(clippy::ptr_arg)]
-//! # quickxml_to_serde
+//! # roxmltree_to_serde
 //! Fast and flexible conversion from XML to JSON using [quick-xml](https://github.com/tafia/quick-xml)
 //! and [serde](https://github.com/serde-rs/json). Inspired by [node2object](https://github.com/vorot93/node2object).
 //!
@@ -18,8 +18,8 @@
 //!
 //! ## Usage example
 //! ```
-//! extern crate quickxml_to_serde;
-//! use quickxml_to_serde::{xml_string_to_json, Config, NullValue};
+//! extern crate roxmltree_to_serde;
+//! use roxmltree_to_serde::{xml_string_to_json, Config, NullValue};
 //!
 //! fn main() {
 //!    let xml = r#"<a attr1="1"><b><c attr2="001">some text</c></b></a>"#;
@@ -36,11 +36,11 @@
 //! * **Output with a custom config:** `{"a":{"attr1":1,"b":{"c":{"attr2":"001","txt":"some text"}}}}`
 //!
 //! ## Additional features
-//! Use `quickxml_to_serde = { version = "0.4", features = ["json_types"] }` to enable support for enforcing JSON types
+//! Use `roxmltree_to_serde = { version = "0.4", features = ["json_types"] }` to enable support for enforcing JSON types
 //! for some XML nodes using xPath-like notations. Example for enforcing attribute `attr2` from the snippet above
 //! as JSON String regardless of its contents:
 //! ```
-//! use quickxml_to_serde::{Config, JsonArray, JsonType};
+//! use roxmltree_to_serde::{Config, JsonArray, JsonType};
 //!
 //! #[cfg(feature = "json_types")]
 //! let conf = Config::new_with_defaults()
@@ -48,7 +48,7 @@
 //! ```
 //!
 //! ## Detailed documentation
-//! See [README](https://github.com/AlecTroemel/quickxml_to_serde) in the source repo for more examples, limitations and detailed behavior description.
+//! See [README](https://github.com/marcomq/roxmltree_to_serde) in the source repo for more examples, limitations and detailed behavior description.
 //!
 //! ## Testing your XML files
 //!
@@ -57,9 +57,6 @@
 
 extern crate roxmltree;
 extern crate serde_json;
-
-#[cfg(feature = "regex_path")]
-extern crate regex;
 
 #[cfg(feature = "regex_path")]
 extern crate regex;
@@ -238,7 +235,7 @@ impl Config {
     #[cfg(feature = "json_types")]
     pub fn add_json_type_override<P>(self, path: P, json_type: JsonArray) -> Self
     where
-        P: Into<PathMatcher>
+        P: Into<PathMatcher>,
     {
         let mut conf = self;
 
@@ -248,10 +245,7 @@ impl Config {
             }
             #[cfg(feature = "regex_path")]
             PathMatcher::Regex(regex) => {
-                conf.json_regex_type_overrides.push((
-                    regex,
-                    json_type
-                ));
+                conf.json_regex_type_overrides.push((regex, json_type));
             }
         }
 
@@ -488,11 +482,14 @@ pub fn xml_string_to_json(xml: String, config: &Config) -> Result<Value, roxmltr
 /// in the list of paths with custom config.
 #[cfg(feature = "json_types")]
 #[inline]
-fn get_json_type_with_absolute_path<'conf>(config: &'conf Config, path: &String) -> (bool, &'conf JsonType) {
+fn get_json_type_with_absolute_path<'conf>(
+    config: &'conf Config,
+    path: &String,
+) -> (bool, &'conf JsonType) {
     match config
-    .json_type_overrides
-    .get(path)
-    .unwrap_or(&JsonArray::Infer(JsonType::Infer))
+        .json_type_overrides
+        .get(path)
+        .unwrap_or(&JsonArray::Infer(JsonType::Infer))
     {
         JsonArray::Infer(v) => (false, v),
         JsonArray::Always(v) => (true, v),
