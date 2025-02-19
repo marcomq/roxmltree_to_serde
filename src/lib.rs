@@ -381,7 +381,6 @@ fn convert_no_text(
         match convert_node(&child, config, &path) {
             Some(val) => {
                 let name = &child.tag_name().name().to_string();
-                println!("{:?}", name);
                 if name == "" {
                     ()
                 } else {

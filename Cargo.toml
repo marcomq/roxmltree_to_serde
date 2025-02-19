@@ -1,6 +1,6 @@
 [package]
 name = "roxmltree_to_serde"
-version = "0.6.1"
+version = "0.6.2"
 edition = "2021"
 authors = ["Alec Troemel <alec@mirusresearch.com>", "Max Voskob <max@onebro.me>", "Marco Mengelkoch"]
 description = "Convert between XML JSON using roxmltree and serde"
