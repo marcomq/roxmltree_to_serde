@@ -2,6 +2,8 @@
 
 Convert XML to JSON using [roxml](https://github.com/RazrFalcon/roxmltree) and [serde](https://github.com/serde-rs/json). Inspired by [node2object](https://github.com/vorot93/node2object).
 
+This is mostly a fork of [AlecTroemel/quickxml_to_serde](https://github.com/AlecTroemel/quickxml_to_serde)
+
 ## Usage examples
 
 #### Basic
